@@ -1,0 +1,92 @@
+W04 PROJECT CHECKPOINT - BOOKSTACK
+Team: Arthur Weale, Jaime Santiago Herrera, David Esparza
+Submitted by: David Esparza
+
+=== MEETING SUMMARY ===
+
+Date: November 29, 2024
+Participants: David Esparza (Individual work)
+
+Due to continued lack of communication from team members (Andrea left the group, Arthur and Jaime did not respond), I completed this checkpoint individually.
+
+=== WORK COMPLETED THIS WEEK ===
+
+1. PROJECT INFRASTRUCTURE
+   - Created Blazor Server application (.NET 9)
+   - Configured Entity Framework Core with SQLite
+   - Set up project structure (Models, Controllers, Data, Components)
+
+2. DATABASE IMPLEMENTATION
+   - 7 entity models with validation (Book, Author, Genre, Shelf, Review + join tables)
+   - DbContext with many-to-many relationships
+   - Seed data: 10 books, 10 authors, 10 genres, 4 shelves
+
+3. REST API
+   - BooksController: 6 endpoints (CRUD + search)
+   - ShelvesController: 7 endpoints (CRUD + book management)
+   - All endpoints use async/await
+
+4. BLAZOR UI
+   - Home page with dashboard
+   - Books catalog page with cards
+   - Shelves management page
+   - Responsive Bootstrap design
+
+5. INTEGRATION
+   - Dependency injection configured
+   - Database auto-seeding on startup
+   - Interactive server rendering
+
+=== CHALLENGES ===
+- Team coordination: Complete lack of participation from other members
+- OpenAPI compatibility: Resolved by simplifying API configuration
+- Many-to-many relationships: Required Fluent API configuration
+- Time management: Balancing scope with deadline
+
+=== SUCCESSES ===
+- ✅ Complete working application built from scratch
+- ✅ Complex database relationships implemented correctly
+- ✅ RESTful API following best practices
+- ✅ Responsive UI with Bootstrap
+- ✅ Build status: 0 errors
+
+=== INSIGHTS ===
+- EF Core Fluent API provides elegant solutions for complex relationships
+- Blazor interactive server rendering simplifies development
+- Async/await patterns improve scalability
+- Clear separation of concerns aids maintainability
+- Comprehensive seed data crucial for testing
+
+=== PROJECT LINKS ===
+
+GitHub Repository:
+https://github.com/desparzas/BookStack
+
+Azure DevOps Project Board:
+[INSERT YOUR AZURE DEVOPS URL HERE]
+Format: https://dev.azure.com/{your-org}/BookStack
+
+=== AZURE DEVOPS WORK ITEMS ===
+
+Completed (Assigned to David Esparza):
+1. Setup Project Infrastructure - Done
+2. Implement Data Models - Done
+3. Setup Database Layer - Done
+4. Build REST API Controllers - Done
+5. Create Blazor UI Components - Done
+
+Pending (Unassigned):
+6. Add Book Creation Dialog - New
+7. Implement Book Details Page - New
+8. Add User Authentication - New
+
+=== TECHNICAL ACHIEVEMENTS ===
+- 7 data models with validation
+- 3 many-to-many relationships
+- 13 RESTful API endpoints
+- 3 interactive Blazor pages
+- SQLite database with EF Core
+- Automatic seeding
+- Responsive Bootstrap UI
+
+Build Status: ✅ Successful (0 errors)

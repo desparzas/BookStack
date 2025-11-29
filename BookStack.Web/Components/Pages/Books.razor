@@ -1,0 +1,125 @@
+@page "/books"
+@using BookStack.Web.Data
+@using BookStack.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject BookStackContext DbContext
+@rendermode InteractiveServer
+
+<PageTitle>Books - BookStack</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>My Books</h1>
+        <button class="btn btn-primary" @onclick="ShowAddBookDialog">
+            Add New Book
+        </button>
+    </div>
+
+    @if (books == null)
+    {
+        <p><em>Loading books...</em></p>
+    }
+    else if (!books.Any())
+    {
+        <div class="alert alert-info">
+            <h4>No books yet!</h4>
+            <p>Click "Add New Book" to start building your library.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var book in books)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        @if (!string.IsNullOrEmpty(book.CoverImageUrl))
+                        {
+                            <img src="@book.CoverImageUrl" class="card-img-top" alt="@book.Title" style="height: 300px; object-fit: cover;">
+                        }
+                        else
+                        {
+                            <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 300px;">
+                                <span class="text-white display-4">📖</span>
+                            </div>
+                        }
+                        <div class="card-body">
+                            <h5 class="card-title">@book.Title</h5>
+                            @if (book.BookAuthors.Any())
+                            {
+                                <p class="card-text"><strong>Author:</strong> @string.Join(", ", book.BookAuthors.Select(ba => ba.Author.Name))</p>
+                            }
+                            @if (book.BookGenres.Any())
+                            {
+                                <p class="card-text">
+                                    @foreach (var genre in book.BookGenres)
+                                    {
+                                        <span class="badge bg-info me-1">@genre.Genre.Name</span>
+                                    }
+                                </p>
+                            }
+                            @if (book.PublicationYear.HasValue)
+                            {
+                                <p class="card-text"><small class="text-muted">Published: @book.PublicationYear</small></p>
+                            }
+                            @if (book.Reviews.Any())
+                            {
+                                var avgRating = book.Reviews.Average(r => r.Rating);
+                                <p class="card-text">
+                                    <strong>Rating:</strong>
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= avgRating)
+                                        {
+                                            <span class="text-warning">⭐</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">☆</span>
+                                        }
+                                    }
+                                    <small>(@book.Reviews.Count reviews)</small>
+                                </p>
+                            }
+                        </div>
+                        <div class="card-footer">
+                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewBookDetails(book.Id)">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<Book>? books;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBooks();
+    }
+
+    private async Task LoadBooks()
+    {
+        books = await DbContext.Books
+            .Include(b => b.BookAuthors)
+                .ThenInclude(ba => ba.Author)
+            .Include(b => b.BookGenres)
+                .ThenInclude(bg => bg.Genre)
+            .Include(b => b.Reviews)
+            .ToListAsync();
+    }
+
+    private void ShowAddBookDialog()
+    {
+        // TODO: Implement add book dialog
+    }
+
+    private void ViewBookDetails(int bookId)
+    {
+        // TODO: Navigate to book details page
+    }
+}

@@ -1,0 +1,28 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+[Bb]in/
+[Oo]bj/
+
+# .NET
+*.dll
+*.exe
+*.pdb
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+
+# User-specific files
+*.docx
+~$*
+
+# OS files
+.DS_Store
+Thumbs.db
