@@ -1,0 +1,197 @@
+W05 PROJECT CHECKPOINT - BOOKSTACK
+Team: Arthur Weale, Jaime Santiago Herrera, David Esparza
+Submitted by: David Esparza
+
+=== PARTICIPANTS ===
+
+Live Meeting Participants: David Esparza (Individual work)
+Date: November 29, 2024
+
+Note: Andrea Brenzink de Oliveira Ferreira left the group earlier. Arthur Weale and Jaime Santiago Herrera have not responded to any communication attempts. All work continues to be completed individually.
+
+=== SUMMARY OF WEEK 5 ACTIVITY ===
+
+CHALLENGES:
+- Continued lack of team participation and communication
+- Balancing implementation scope with academic deadlines
+- Ensuring database relationships work correctly with EF Core
+- Designing intuitive UI/UX for book management features
+- Managing time between this project and other coursework
+
+SUCCESSES:
+- ✅ Successfully built complete full-stack application from scratch
+- ✅ Implemented complex many-to-many relationships in database
+- ✅ Created functional REST API with 13 endpoints
+- ✅ Developed responsive Blazor UI with interactive components
+- ✅ Database auto-seeding works correctly on first run
+- ✅ Application builds and runs without errors
+- ✅ Code pushed to GitHub repository
+- ✅ Project documentation completed
+
+NEW TASKS ADDED TO BACKLOG:
+- Add book creation dialog (modal form)
+- Implement book details page with full information
+- Add user authentication with ASP.NET Core Identity
+- Create review editing functionality
+- Implement frontend search UI
+- Add book cover image upload feature
+- Create reading statistics dashboard
+
+CHANGE ORDERS:
+- Removed OpenAPI/Swagger integration due to version compatibility issues
+- Simplified initial scope to focus on core CRUD operations
+- Postponed external API integration (Google Books) to future iterations
+- Decided to use SQLite for both development and initial production deployment
+
+=== AZURE DEVOPS PROJECT URL ===
+
+[INSERT YOUR AZURE DEVOPS URL HERE]
+Format: https://dev.azure.com/{your-org}/BookStack
+
+Board includes 8 User Stories:
+- 5 completed (assigned to David Esparza)
+- 3 pending for future development
+
+=== DETAILED TASK REPORT ===
+
+TASK: "Setup Database Layer" (User Story #3)
+STATUS: Completed
+ASSIGNED TO: David Esparza
+AZURE DEVOPS WORK ITEM ID: [Your work item ID]
+
+DESCRIPTION:
+This task involved designing and implementing the complete database layer for the BookStack application using Entity Framework Core with SQLite. The primary challenge was correctly configuring complex many-to-many relationships between books, authors, genres, and shelves.
+
+TECHNICAL IMPLEMENTATION:
+
+1. Created BookStackContext (DbContext):
+   - Configured 8 DbSet properties for all entities
+   - Location: BookStack.Web/Data/BookStackContext.cs
+   - Used Fluent API to configure relationships in OnModelCreating method
+
+2. Many-to-Many Relationship Configuration:
+   - Book ↔ Author: Configured through BookAuthor join table with composite key (BookId, AuthorId)
+   - Book ↔ Genre: Configured through BookGenre join table with composite key (BookId, GenreId)
+   - Shelf ↔ Book: Configured through ShelfBook join table with additional ReadingStatus enum
+   - Each relationship configured with proper foreign keys and cascade delete behavior
+
+3. Seed Data Implementation:
+   - Created SeedData.cs with comprehensive Initialize method
+   - Populated 10 books (Harry Potter, 1984, Lord of the Rings, Clean Code, etc.)
+   - Added 10 authors (J.K. Rowling, George Orwell, J.R.R. Tolkien, etc.)
+   - Included 10 genres (Fiction, Sci-Fi, Fantasy, Technology, etc.)
+   - Created 4 default shelves (Want to Read, Currently Reading, Read, Favorites)
+   - Established relationships between entities
+   - Added 2 sample reviews with ratings
+
+4. Database Initialization in Program.cs:
+   - Configured automatic database creation on first run
+   - Implemented proper error handling with logging
+   - Ensured seed data only runs once (checks if Books table has data)
+
+CHALLENGES ENCOUNTERED:
+- Understanding EF Core Fluent API syntax for composite keys
+- Ensuring cascade delete doesn't create circular dependencies
+- Configuring navigation properties bidirectionally
+- Preventing duplicate seed data on multiple runs
+- Handling nullable vs non-nullable reference types in .NET 9
+
+SOLUTIONS IMPLEMENTED:
+- Used HasKey() method with anonymous objects for composite keys
+- Carefully designed foreign key relationships to avoid cycles
+- Added null-forgiving operators where appropriate for navigation properties
+- Implemented "if (db.Books.Any()) return;" check in seed data
+- Used scoped service pattern for database initialization
+
+FIT WITHIN PROJECT SCOPE:
+This task is fundamental to the entire application. The database layer:
+- Stores all book, author, genre, shelf, and review data
+- Enables CRUD operations through the API controllers
+- Supports complex queries for search and filtering
+- Provides the foundation for user-specific data in future iterations
+- Allows tracking of reading progress and book organization
+
+The many-to-many relationships are critical because:
+- Books can have multiple authors (e.g., co-authored books)
+- Books can belong to multiple genres (e.g., "Science Fiction" and "Fantasy")
+- Books can be on multiple shelves (e.g., "Currently Reading" and "Favorites")
+- Users need flexible organization options
+
+FUNCTIONALITY DELIVERED:
+✅ Complete database schema with 8 entities
+✅ 3 many-to-many relationships properly configured
+✅ Automatic database creation on application startup
+✅ Comprehensive seed data for testing and demonstration
+✅ Proper error handling and logging
+✅ Ready for integration with API controllers and UI
+
+CODE LOCATIONS:
+- DbContext: BookStack.Web/Data/BookStackContext.cs (75 lines)
+- Seed Data: BookStack.Web/Data/SeedData.cs (280 lines)
+- Models: BookStack.Web/Models/ (8 files)
+- Configuration: BookStack.Web/Program.cs (lines 28-47)
+
+TESTING:
+✅ Database creates successfully on first run
+✅ Seed data populates all tables correctly
+✅ Relationships maintain referential integrity
+✅ Navigation properties load correctly with Include()
+✅ Cascade deletes work as expected
+✅ No foreign key constraint violations
+
+TIME INVESTED: Approximately 3-4 hours including research, implementation, and testing.
+
+=== ADDITIONAL TASKS WORKED ON THIS WEEK ===
+
+1. PROJECT INFRASTRUCTURE SETUP
+   - Created Blazor Server project structure
+   - Configured dependency injection
+   - Set up folder organization
+
+2. DATA MODELS IMPLEMENTATION
+   - Created 7 entity models with validation attributes
+   - Implemented 3 join table classes
+   - Added ReadingStatus enum
+
+3. REST API CONTROLLERS
+   - Built BooksController with 6 endpoints
+   - Built ShelvesController with 7 endpoints
+   - Implemented async/await throughout
+
+4. BLAZOR UI COMPONENTS
+   - Created Home dashboard page
+   - Built Books catalog with card layout
+   - Developed Shelves management page
+   - Updated navigation menu
+
+5. DOCUMENTATION
+   - Created comprehensive README.md
+   - Wrote Azure DevOps setup guide
+   - Prepared checkpoint submission documents
+
+=== PROJECT STATUS ===
+
+Current State: MVP (Minimum Viable Product) Complete
+Build Status: ✅ Successful (0 errors)
+Database: ✅ Working with sample data
+API: ✅ All endpoints functional
+UI: ✅ Responsive and interactive
+GitHub: ✅ Code pushed and up to date
+
+Next Steps:
+- Create book creation dialog
+- Add book details page
+- Implement user authentication
+- Add review management
+- Enhance search functionality
+
+=== TEAM COLLABORATION NOTES ===
+
+Despite continued efforts to engage team members, no responses have been received. All project work has been completed independently with full transparency to the instructor about the team situation.
+
+I remain open to integrating contributions from team members if they become available, and have structured the code to be maintainable and extensible for potential future collaboration.
+
+---
+Submitted by: David Esparza
+Course: CSE 325 - .NET Development
+Date: November 29, 2024
