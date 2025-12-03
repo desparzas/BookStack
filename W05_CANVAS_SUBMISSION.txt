@@ -28,14 +28,19 @@ SUCCESSES:
 - ✅ Code pushed to GitHub repository
 - ✅ Project documentation completed
 
+NEW TASKS COMPLETED THIS WEEK:
+- ✅ Add book creation dialog (modal form) - COMPLETED
+
 NEW TASKS ADDED TO BACKLOG:
-- Add book creation dialog (modal form)
 - Implement book details page with full information
+- Add edit book dialog (similar to add dialog)
+- Add delete book confirmation dialog
 - Add user authentication with ASP.NET Core Identity
 - Create review editing functionality
-- Implement frontend search UI
+- Implement frontend search UI with filters
 - Add book cover image upload feature
 - Create reading statistics dashboard
+- Add ability to add new authors and genres from dialog
 
 CHANGE ORDERS:
 - Removed OpenAPI/Swagger integration due to version compatibility issues
@@ -54,136 +59,191 @@ Board includes 8 User Stories:
 
 === DETAILED TASK REPORT ===
 
-TASK: "Setup Database Layer" (User Story #3)
-STATUS: Completed
+TASK: "Add Book Creation Dialog" (User Story #6)
+STATUS: Completed (Week 5)
 ASSIGNED TO: David Esparza
-AZURE DEVOPS WORK ITEM ID: [Your work item ID]
+AZURE DEVOPS WORK ITEM ID: [Your work item ID for User Story #6]
 
 DESCRIPTION:
-This task involved designing and implementing the complete database layer for the BookStack application using Entity Framework Core with SQLite. The primary challenge was correctly configuring complex many-to-many relationships between books, authors, genres, and shelves.
+This task involved implementing a modal dialog component for adding new books to the library. The feature provides a complete form with validation, allowing users to input all book details including title, description, ISBN, publication year, page count, cover image URL, and select multiple authors and genres through checkboxes.
 
 TECHNICAL IMPLEMENTATION:
 
-1. Created BookStackContext (DbContext):
-   - Configured 8 DbSet properties for all entities
-   - Location: BookStack.Web/Data/BookStackContext.cs
-   - Used Fluent API to configure relationships in OnModelCreating method
+1. Created BookCreateDto (Data Transfer Object):
+   - Location: BookStack.Web/Models/BookCreateDto.cs
+   - Purpose: Separate DTO for creating books to avoid exposing internal entity structure
+   - Properties: Title, Description, ISBN, PublicationYear, CoverImageUrl, PageCount
+   - Collections: AuthorIds (List<int>), GenreIds (List<int>) for many-to-many relationships
+   - Validation: DataAnnotations for required fields, string length, regex for ISBN, range for year/pages
 
-2. Many-to-Many Relationship Configuration:
-   - Book ↔ Author: Configured through BookAuthor join table with composite key (BookId, AuthorId)
-   - Book ↔ Genre: Configured through BookGenre join table with composite key (BookId, GenreId)
-   - Shelf ↔ Book: Configured through ShelfBook join table with additional ReadingStatus enum
-   - Each relationship configured with proper foreign keys and cascade delete behavior
+2. Created AddBookDialog Blazor Component:
+   - Location: BookStack.Web/Components/Dialogs/AddBookDialog.razor
+   - Component Type: Interactive modal dialog with form
+   - Total Lines: 250+ lines of Razor markup and C# code
+   - Features Implemented:
+     * Bootstrap modal with backdrop overlay
+     * EditForm with DataAnnotationsValidator for client-side validation
+     * InputText components for text fields (Title, Description, ISBN, CoverImageUrl)
+     * InputNumber components for numeric fields (PublicationYear, PageCount)
+     * InputTextArea for multi-line description
+     * Checkbox lists for selecting multiple authors and genres
+     * Loading spinner during save operation
+     * Success and error message display
+     * Cancel and Submit buttons with proper state management
 
-3. Seed Data Implementation:
-   - Created SeedData.cs with comprehensive Initialize method
-   - Populated 10 books (Harry Potter, 1984, Lord of the Rings, Clean Code, etc.)
-   - Added 10 authors (J.K. Rowling, George Orwell, J.R.R. Tolkien, etc.)
-   - Included 10 genres (Fiction, Sci-Fi, Fantasy, Technology, etc.)
-   - Created 4 default shelves (Want to Read, Currently Reading, Read, Favorites)
-   - Established relationships between entities
-   - Added 2 sample reviews with ratings
+3. Component Parameters and Events:
+   - IsVisible (bool): Controls dialog visibility
+   - IsVisibleChanged (EventCallback): Two-way binding for visibility state
+   - OnBookAdded (EventCallback): Notifies parent when book is added successfully
+   - Implements proper Blazor component parameter binding patterns
 
-4. Database Initialization in Program.cs:
-   - Configured automatic database creation on first run
-   - Implemented proper error handling with logging
-   - Ensured seed data only runs once (checks if Books table has data)
+4. Database Operations:
+   - Injects BookStackContext directly into the component
+   - Loads available authors and genres on component initialization
+   - Creates new Book entity from DTO
+   - Adds BookAuthor relationships for selected authors
+   - Adds BookGenre relationships for selected genres
+   - Uses transactions implicitly through SaveChangesAsync()
+   - Implements proper async/await patterns throughout
+
+5. Updated Books.razor Page:
+   - Location: BookStack.Web/Components/Pages/Books.razor
+   - Added using directive for BookStack.Web.Components.Dialogs namespace
+   - Integrated AddBookDialog component with parameter binding
+   - Added showAddDialog boolean state variable
+   - Implemented ShowAddBookDialog() method to open modal
+   - Implemented HandleBookAdded() callback to reload books after adding
+   - Added icon to "Add New Book" button for better UX
+   - Books list now orders by DateAdded descending (newest first)
+
+6. Global Configuration:
+   - Updated _Imports.razor to include Dialogs namespace globally
+   - Makes dialog components available to all pages without explicit using
 
 CHALLENGES ENCOUNTERED:
-- Understanding EF Core Fluent API syntax for composite keys
-- Ensuring cascade delete doesn't create circular dependencies
-- Configuring navigation properties bidirectionally
-- Preventing duplicate seed data on multiple runs
-- Handling nullable vs non-nullable reference types in .NET 9
+- Bootstrap Modal Integration: Blazor doesn't have built-in modal support, had to use CSS/HTML approach
+- Checkbox Binding: Needed custom logic to toggle items in/out of selected lists
+- Two-Way Parameter Binding: Required EventCallback pattern for IsVisibleChanged
+- Form State Management: Managing validation, loading states, and error/success messages
+- Relationship Creation: Ensuring author and genre relationships are added after book creation
 
 SOLUTIONS IMPLEMENTED:
-- Used HasKey() method with anonymous objects for composite keys
-- Carefully designed foreign key relationships to avoid cycles
-- Added null-forgiving operators where appropriate for navigation properties
-- Implemented "if (db.Books.Any()) return;" check in seed data
-- Used scoped service pattern for database initialization
+- Custom CSS classes (fade show d-block) to display Bootstrap modal without JavaScript
+- ToggleAuthor() and ToggleGenre() methods to handle checkbox state changes
+- Proper EventCallback pattern with IsVisible/IsVisibleChanged parameters
+- Separate boolean flags (isSaving) and nullable strings (errorMessage, successMessage)
+- Sequential database operations: create book, save, then add relationships, save again
 
 FIT WITHIN PROJECT SCOPE:
-This task is fundamental to the entire application. The database layer:
-- Stores all book, author, genre, shelf, and review data
-- Enables CRUD operations through the API controllers
-- Supports complex queries for search and filtering
-- Provides the foundation for user-specific data in future iterations
-- Allows tracking of reading progress and book organization
+This feature is essential for the BookStack application because:
+- Enables users to add books to their library (core CRUD operation)
+- Validates input data before saving to maintain data integrity
+- Provides intuitive UI through modal dialog pattern
+- Supports many-to-many relationships with authors and genres
+- Demonstrates proper Blazor component architecture
+- Shows mastery of form handling and validation in Blazor
 
-The many-to-many relationships are critical because:
-- Books can have multiple authors (e.g., co-authored books)
-- Books can belong to multiple genres (e.g., "Science Fiction" and "Fantasy")
-- Books can be on multiple shelves (e.g., "Currently Reading" and "Favorites")
-- Users need flexible organization options
+The dialog-based approach is superior to a separate page because:
+- Better user experience (no navigation required)
+- Faster interaction (modal opens instantly)
+- Context preservation (user stays on books list)
+- Modern web application pattern
 
 FUNCTIONALITY DELIVERED:
-✅ Complete database schema with 8 entities
-✅ 3 many-to-many relationships properly configured
-✅ Automatic database creation on application startup
-✅ Comprehensive seed data for testing and demonstration
-✅ Proper error handling and logging
-✅ Ready for integration with API controllers and UI
+✅ Complete modal dialog for adding books
+✅ Form validation with DataAnnotations
+✅ Multi-select for authors and genres (checkbox lists)
+✅ ISBN validation with regex (10 or 13 digits)
+✅ Year and page count validation with range
+✅ Success/error message display
+✅ Loading state with spinner during save
+✅ Automatic books list refresh after adding
+✅ Form reset after successful submission
+✅ Cancel functionality with form reset
+✅ Proper async database operations
+✅ Many-to-many relationship creation
 
 CODE LOCATIONS:
-- DbContext: BookStack.Web/Data/BookStackContext.cs (75 lines)
-- Seed Data: BookStack.Web/Data/SeedData.cs (280 lines)
-- Models: BookStack.Web/Models/ (8 files)
-- Configuration: BookStack.Web/Program.cs (lines 28-47)
+- DTO Model: BookStack.Web/Models/BookCreateDto.cs (29 lines)
+- Dialog Component: BookStack.Web/Components/Dialogs/AddBookDialog.razor (250+ lines)
+- Books Page: BookStack.Web/Components/Pages/Books.razor (updated, 141 lines total)
+- Global Imports: BookStack.Web/Components/_Imports.razor (updated, line 11)
 
-TESTING:
-✅ Database creates successfully on first run
-✅ Seed data populates all tables correctly
-✅ Relationships maintain referential integrity
-✅ Navigation properties load correctly with Include()
-✅ Cascade deletes work as expected
-✅ No foreign key constraint violations
+TESTING PERFORMED:
+✅ Dialog opens when "Add New Book" button is clicked
+✅ Form validation works (required fields, string lengths, ranges)
+✅ ISBN regex validation accepts 10 or 13 digits
+✅ Multiple authors and genres can be selected
+✅ Book saves successfully to database
+✅ BookAuthor and BookGenre relationships created correctly
+✅ Books list refreshes and shows new book at top
+✅ Dialog closes automatically after successful save
+✅ Cancel button works and resets form
+✅ Error messages display when save fails
+✅ Success message displays before closing
+✅ Loading spinner shows during save operation
 
-TIME INVESTED: Approximately 3-4 hours including research, implementation, and testing.
+USER EXPERIENCE IMPROVEMENTS:
+- Modal backdrop prevents accidental clicks outside
+- Bootstrap styling provides professional appearance
+- Icon on "Add New Book" button improves visual clarity
+- Validation messages appear immediately under fields
+- Spinner prevents double-submission during save
+- Scrollable checkbox lists for many authors/genres
+- Helper text under ISBN field shows expected format
 
-=== ADDITIONAL TASKS WORKED ON THIS WEEK ===
+TIME INVESTED: Approximately 2-3 hours including:
+- 30 minutes: DTO design and creation
+- 90 minutes: Dialog component development and styling
+- 30 minutes: Integration with Books page
+- 30 minutes: Testing and bug fixes
 
-1. PROJECT INFRASTRUCTURE SETUP
-   - Created Blazor Server project structure
-   - Configured dependency injection
-   - Set up folder organization
+=== ADDITIONAL CONTEXT: PREVIOUS WORK (W01-W04) ===
 
-2. DATA MODELS IMPLEMENTATION
-   - Created 7 entity models with validation attributes
-   - Implemented 3 join table classes
-   - Added ReadingStatus enum
+The foundation for this week's Add Book Dialog feature was built in previous weeks:
 
-3. REST API CONTROLLERS
-   - Built BooksController with 6 endpoints
-   - Built ShelvesController with 7 endpoints
-   - Implemented async/await throughout
+W01-W02: Initial Setup
+- Created Blazor Server project structure
+- Configured Entity Framework Core with SQLite
+- Set up dependency injection
 
-4. BLAZOR UI COMPONENTS
-   - Created Home dashboard page
-   - Built Books catalog with card layout
-   - Developed Shelves management page
-   - Updated navigation menu
+W02-W03: Database and Models
+- Created 7 entity models with validation
+- Implemented DbContext with many-to-many relationships
+- Created comprehensive seed data
 
-5. DOCUMENTATION
-   - Created comprehensive README.md
-   - Wrote Azure DevOps setup guide
-   - Prepared checkpoint submission documents
+W03-W04: API and UI Foundation
+- Built BooksController with 6 endpoints
+- Built ShelvesController with 7 endpoints
+- Created Books catalog page (where dialog is integrated)
+- Developed Home dashboard and Shelves management page
+
+This week (W05) focused specifically on implementing the Add Book Creation Dialog feature, which builds upon all these previous components to provide a complete user-facing feature for adding books to the library.
 
 === PROJECT STATUS ===
 
-Current State: MVP (Minimum Viable Product) Complete
-Build Status: ✅ Successful (0 errors)
+Current State: MVP+ (Core Features + Add Book Dialog)
+Build Status: ✅ Successful (0 errors, 1 warning about analyzer version)
 Database: ✅ Working with sample data
 API: ✅ All endpoints functional
 UI: ✅ Responsive and interactive
-GitHub: ✅ Code pushed and up to date
+New Feature: ✅ Add Book Dialog fully functional
+GitHub: ✅ Code pushed and up to date (Week 5 changes committed)
+
+Features Completed:
+- ✅ Database layer with many-to-many relationships
+- ✅ REST API with 13 endpoints
+- ✅ Blazor UI pages (Home, Books, Shelves)
+- ✅ Add Book Dialog with validation (Week 5)
+- ✅ Real-time list refresh after adding books
 
 Next Steps:
-- Create book creation dialog
-- Add book details page
+- Add book details page with full information
+- Implement edit book dialog
+- Add delete confirmation dialog
 - Implement user authentication
-- Add review management
-- Enhance search functionality
+- Add review management UI
+- Enhance search functionality with filters
 
 === TEAM COLLABORATION NOTES ===
 

@@ -1,6 +1,7 @@
 @page "/books"
 @using BookStack.Web.Data
 @using BookStack.Web.Models
+@using BookStack.Web.Components.Dialogs
 @using Microsoft.EntityFrameworkCore
 @inject BookStackContext DbContext
 @rendermode InteractiveServer
@@ -11,7 +12,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>My Books</h1>
         <button class="btn btn-primary" @onclick="ShowAddBookDialog">
-            Add New Book
+            <i class="bi bi-plus-circle"></i> Add New Book
         </button>
     </div>
 
@@ -94,8 +95,14 @@
     }
 </div>
 
+<!-- Add Book Dialog -->
+<AddBookDialog IsVisible="@showAddDialog"
+               IsVisibleChanged="@((bool value) => showAddDialog = value)"
+               OnBookAdded="@HandleBookAdded" />
+
 @code {
     private List<Book>? books;
+    private bool showAddDialog = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -110,12 +117,20 @@
             .Include(b => b.BookGenres)
                 .ThenInclude(bg => bg.Genre)
             .Include(b => b.Reviews)
+            .OrderByDescending(b => b.DateAdded)
             .ToListAsync();
     }
 
     private void ShowAddBookDialog()
     {
-        // TODO: Implement add book dialog
+        showAddDialog = true;
+    }
+
+    private async Task HandleBookAdded()
+    {
+        // Reload books list after a new book is added
+        await LoadBooks();
+        showAddDialog = false;
     }
 
     private void ViewBookDetails(int bookId)

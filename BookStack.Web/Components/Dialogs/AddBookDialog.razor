@@ -1,0 +1,279 @@
+@using BookStack.Web.Data
+@using BookStack.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject BookStackContext DbContext
+
+@if (IsVisible)
+{
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add New Book</h5>
+                    <button type="button" class="btn-close" @onclick="Cancel"></button>
+                </div>
+                <div class="modal-body">
+                    <EditForm Model="@bookDto" OnValidSubmit="@HandleValidSubmit">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Title *</label>
+                            <InputText class="form-control" @bind-Value="bookDto.Title" placeholder="Enter book title" />
+                            <ValidationMessage For="@(() => bookDto.Title)" class="text-danger" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <InputTextArea class="form-control" @bind-Value="bookDto.Description" rows="3" placeholder="Enter book description" />
+                            <ValidationMessage For="@(() => bookDto.Description)" class="text-danger" />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">ISBN</label>
+                                <InputText class="form-control" @bind-Value="bookDto.ISBN" placeholder="ISBN (10 or 13 digits)" />
+                                <ValidationMessage For="@(() => bookDto.ISBN)" class="text-danger" />
+                                <small class="text-muted">Format: 1234567890 or 1234567890123</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Publication Year</label>
+                                <InputNumber class="form-control" @bind-Value="bookDto.PublicationYear" placeholder="e.g., 2024" />
+                                <ValidationMessage For="@(() => bookDto.PublicationYear)" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Page Count</label>
+                                <InputNumber class="form-control" @bind-Value="bookDto.PageCount" placeholder="Number of pages" />
+                                <ValidationMessage For="@(() => bookDto.PageCount)" class="text-danger" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cover Image URL</label>
+                                <InputText class="form-control" @bind-Value="bookDto.CoverImageUrl" placeholder="https://example.com/cover.jpg" />
+                                <ValidationMessage For="@(() => bookDto.CoverImageUrl)" class="text-danger" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Authors *</label>
+                            @if (availableAuthors != null)
+                            {
+                                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                    @foreach (var author in availableAuthors)
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="author-@author.Id"
+                                                   checked="@bookDto.AuthorIds.Contains(author.Id)"
+                                                   @onchange="@(e => ToggleAuthor(author.Id, (bool)e.Value!))" />
+                                            <label class="form-check-label" for="author-@author.Id">
+                                                @author.Name
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                <ValidationMessage For="@(() => bookDto.AuthorIds)" class="text-danger" />
+                            }
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Genres *</label>
+                            @if (availableGenres != null)
+                            {
+                                <div class="border rounded p-2" style="max-height: 150px; overflow-y: auto;">
+                                    @foreach (var genre in availableGenres)
+                                    {
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox"
+                                                   id="genre-@genre.Id"
+                                                   checked="@bookDto.GenreIds.Contains(genre.Id)"
+                                                   @onchange="@(e => ToggleGenre(genre.Id, (bool)e.Value!))" />
+                                            <label class="form-check-label" for="genre-@genre.Id">
+                                                @genre.Name
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                <ValidationMessage For="@(() => bookDto.GenreIds)" class="text-danger" />
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success" role="alert">
+                                @successMessage
+                            </div>
+                        }
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Saving...</span>
+                                }
+                                else
+                                {
+                                    <span>Add Book</span>
+                                }
+                            </button>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public bool IsVisible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsVisibleChanged { get; set; }
+
+    [Parameter]
+    public EventCallback OnBookAdded { get; set; }
+
+    private BookCreateDto bookDto = new();
+    private List<Author>? availableAuthors;
+    private List<Genre>? availableGenres;
+    private bool isSaving = false;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAuthorsAndGenres();
+    }
+
+    private async Task LoadAuthorsAndGenres()
+    {
+        availableAuthors = await DbContext.Authors.OrderBy(a => a.Name).ToListAsync();
+        availableGenres = await DbContext.Genres.OrderBy(g => g.Name).ToListAsync();
+    }
+
+    private void ToggleAuthor(int authorId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!bookDto.AuthorIds.Contains(authorId))
+            {
+                bookDto.AuthorIds.Add(authorId);
+            }
+        }
+        else
+        {
+            bookDto.AuthorIds.Remove(authorId);
+        }
+    }
+
+    private void ToggleGenre(int genreId, bool isChecked)
+    {
+        if (isChecked)
+        {
+            if (!bookDto.GenreIds.Contains(genreId))
+            {
+                bookDto.GenreIds.Add(genreId);
+            }
+        }
+        else
+        {
+            bookDto.GenreIds.Remove(genreId);
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            // Create new book
+            var book = new Book
+            {
+                Title = bookDto.Title,
+                Description = bookDto.Description,
+                ISBN = bookDto.ISBN,
+                PublicationYear = bookDto.PublicationYear,
+                CoverImageUrl = bookDto.CoverImageUrl,
+                PageCount = bookDto.PageCount,
+                DateAdded = DateTime.UtcNow
+            };
+
+            DbContext.Books.Add(book);
+            await DbContext.SaveChangesAsync();
+
+            // Add author relationships
+            foreach (var authorId in bookDto.AuthorIds)
+            {
+                DbContext.BookAuthors.Add(new BookAuthor
+                {
+                    BookId = book.Id,
+                    AuthorId = authorId
+                });
+            }
+
+            // Add genre relationships
+            foreach (var genreId in bookDto.GenreIds)
+            {
+                DbContext.BookGenres.Add(new BookGenre
+                {
+                    BookId = book.Id,
+                    GenreId = genreId
+                });
+            }
+
+            await DbContext.SaveChangesAsync();
+
+            successMessage = "Book added successfully!";
+
+            // Wait a moment to show success message
+            await Task.Delay(1000);
+
+            // Reset form
+            bookDto = new BookCreateDto();
+
+            // Notify parent component
+            await OnBookAdded.InvokeAsync();
+
+            // Close dialog
+            await Close();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error adding book: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task Cancel()
+    {
+        errorMessage = null;
+        successMessage = null;
+        bookDto = new BookCreateDto();
+        await Close();
+    }
+
+    private async Task Close()
+    {
+        IsVisible = false;
+        await IsVisibleChanged.InvokeAsync(IsVisible);
+    }
+}
