@@ -1,4 +1,5 @@
 using BookStack.Web.Models;
+using BookStack.Web.Services;
 
 namespace BookStack.Web.Data;
 
@@ -218,6 +219,27 @@ public static class SeedData
             }
         };
         context.Reviews.AddRange(reviews);
+        context.SaveChanges();
+
+        // Seed demo users
+        var users = new List<User>
+        {
+            new User
+            {
+                Username = "demo",
+                Email = "demo@bookstack.com",
+                PasswordHash = AuthService.HashPassword("demo123"),
+                DateCreated = DateTime.UtcNow
+            },
+            new User
+            {
+                Username = "david",
+                Email = "david@bookstack.com",
+                PasswordHash = AuthService.HashPassword("password123"),
+                DateCreated = DateTime.UtcNow
+            }
+        };
+        context.Users.AddRange(users);
         context.SaveChanges();
     }
 }

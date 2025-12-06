@@ -1,5 +1,6 @@
 using BookStack.Web.Components;
 using BookStack.Web.Data;
+using BookStack.Web.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddDbContext<BookStackContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BookStackContext")
         ?? "Data Source=bookstack.db"));
+
+// Add authentication services
+builder.Services.AddScoped<AuthService>();
+builder.Services.AddSingleton<AuthStateService>();
 
 var app = builder.Build();
 

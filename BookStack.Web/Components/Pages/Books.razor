@@ -4,6 +4,7 @@
 @using BookStack.Web.Components.Dialogs
 @using Microsoft.EntityFrameworkCore
 @inject BookStackContext DbContext
+@inject NavigationManager Navigation
 @rendermode InteractiveServer
 
 <PageTitle>Books - BookStack</PageTitle>
@@ -135,6 +136,6 @@
 
     private void ViewBookDetails(int bookId)
     {
-        // TODO: Navigate to book details page
+        Navigation.NavigateTo($"/books/{bookId}");
     }
 }

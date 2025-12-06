@@ -1,0 +1,292 @@
+@page "/books/{id:int}"
+@using BookStack.Web.Data
+@using BookStack.Web.Models
+@using Microsoft.EntityFrameworkCore
+@inject BookStackContext DbContext
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>@(book?.Title ?? "Book Details") - BookStack</PageTitle>
+
+<div class="container mt-4">
+    @if (book == null)
+    {
+        <p><em>Loading book details...</em></p>
+    }
+    else
+    {
+        <div class="row">
+            <!-- Book Cover and Quick Actions -->
+            <div class="col-md-4">
+                @if (!string.IsNullOrEmpty(book.CoverImageUrl))
+                {
+                    <img src="@book.CoverImageUrl" class="img-fluid rounded shadow-sm" alt="@book.Title">
+                }
+                else
+                {
+                    <div class="bg-secondary text-white d-flex align-items-center justify-content-center rounded shadow-sm" style="height: 400px;">
+                        <span class="display-1">📖</span>
+                    </div>
+                }
+
+                <div class="mt-3">
+                    <button class="btn btn-primary w-100 mb-2" @onclick="AddToShelf">
+                        <i class="bi bi-bookmark-plus"></i> Add to Shelf
+                    </button>
+                    <button class="btn btn-outline-secondary w-100 mb-2" @onclick="EditBook">
+                        <i class="bi bi-pencil"></i> Edit Book
+                    </button>
+                    <button class="btn btn-outline-danger w-100" @onclick="DeleteBook">
+                        <i class="bi bi-trash"></i> Delete Book
+                    </button>
+                </div>
+
+                <!-- Shelves this book is on -->
+                @if (book.ShelfBooks.Any())
+                {
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <strong>On Shelves</strong>
+                        </div>
+                        <ul class="list-group list-group-flush">
+                            @foreach (var shelfBook in book.ShelfBooks)
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    @shelfBook.Shelf.Name
+                                    <span class="badge @GetStatusBadgeClass(shelfBook.ReadingStatus)">
+                                        @shelfBook.ReadingStatus
+                                    </span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            </div>
+
+            <!-- Book Information -->
+            <div class="col-md-8">
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="/">Home</a></li>
+                        <li class="breadcrumb-item"><a href="/books">Books</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">@book.Title</li>
+                    </ol>
+                </nav>
+
+                <h1 class="display-5">@book.Title</h1>
+
+                @if (book.BookAuthors.Any())
+                {
+                    <h5 class="text-muted mb-3">
+                        by @string.Join(", ", book.BookAuthors.Select(ba => ba.Author.Name))
+                    </h5>
+                }
+
+                <!-- Genres -->
+                @if (book.BookGenres.Any())
+                {
+                    <div class="mb-3">
+                        @foreach (var genre in book.BookGenres)
+                        {
+                            <span class="badge bg-info me-1">@genre.Genre.Name</span>
+                        }
+                    </div>
+                }
+
+                <!-- Rating -->
+                @if (book.Reviews.Any())
+                {
+                    var avgRating = book.Reviews.Average(r => r.Rating);
+                    var totalReviews = book.Reviews.Count;
+                    <div class="mb-3">
+                        <strong>Rating:</strong>
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= avgRating)
+                            {
+                                <span class="text-warning fs-5">⭐</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fs-5">☆</span>
+                            }
+                        }
+                        <span class="ms-2">@avgRating.ToString("0.0") / 5.0 (@totalReviews @(totalReviews == 1 ? "review" : "reviews"))</span>
+                    </div>
+                }
+
+                <!-- Book Details -->
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <strong>Book Information</strong>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-0">
+                            @if (!string.IsNullOrEmpty(book.ISBN))
+                            {
+                                <dt class="col-sm-3">ISBN</dt>
+                                <dd class="col-sm-9">@book.ISBN</dd>
+                            }
+
+                            @if (book.PublicationYear.HasValue)
+                            {
+                                <dt class="col-sm-3">Published</dt>
+                                <dd class="col-sm-9">@book.PublicationYear</dd>
+                            }
+
+                            @if (book.PageCount.HasValue)
+                            {
+                                <dt class="col-sm-3">Pages</dt>
+                                <dd class="col-sm-9">@book.PageCount pages</dd>
+                            }
+
+                            <dt class="col-sm-3">Added</dt>
+                            <dd class="col-sm-9">@book.DateAdded.ToString("MMMM dd, yyyy")</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                @if (!string.IsNullOrEmpty(book.Description))
+                {
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <strong>Description</strong>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">@book.Description</p>
+                        </div>
+                    </div>
+                }
+
+                <!-- Reviews -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>Reviews (@book.Reviews.Count)</strong>
+                        <button class="btn btn-sm btn-primary" @onclick="ShowAddReviewDialog">
+                            <i class="bi bi-plus-circle"></i> Add Review
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        @if (!book.Reviews.Any())
+                        {
+                            <p class="text-muted">No reviews yet. Be the first to review this book!</p>
+                        }
+                        else
+                        {
+                            @foreach (var review in book.Reviews.OrderByDescending(r => r.DateCreated))
+                            {
+                                <div class="mb-3 pb-3 border-bottom">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <div class="mb-1">
+                                                @for (int i = 1; i <= 5; i++)
+                                                {
+                                                    if (i <= review.Rating)
+                                                    {
+                                                        <span class="text-warning">⭐</span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">☆</span>
+                                                    }
+                                                }
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(review.ReviewText))
+                                            {
+                                                <p class="mb-1">@review.ReviewText</p>
+                                            }
+                                            <small class="text-muted">
+                                                @review.DateCreated.ToString("MMMM dd, yyyy")
+                                                @if (review.DateModified.HasValue)
+                                                {
+                                                    <span>(edited)</span>
+                                                }
+                                            </small>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteReview(review.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Book? book;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadBook();
+    }
+
+    private async Task LoadBook()
+    {
+        book = await DbContext.Books
+            .Include(b => b.BookAuthors)
+                .ThenInclude(ba => ba.Author)
+            .Include(b => b.BookGenres)
+                .ThenInclude(bg => bg.Genre)
+            .Include(b => b.Reviews)
+            .Include(b => b.ShelfBooks)
+                .ThenInclude(sb => sb.Shelf)
+            .FirstOrDefaultAsync(b => b.Id == Id);
+    }
+
+    private string GetStatusBadgeClass(ReadingStatus status)
+    {
+        return status switch
+        {
+            ReadingStatus.NotStarted => "bg-secondary",
+            ReadingStatus.InProgress => "bg-warning",
+            ReadingStatus.Completed => "bg-success",
+            _ => "bg-light"
+        };
+    }
+
+    private void AddToShelf()
+    {
+        // TODO: Implement add to shelf dialog
+    }
+
+    private void EditBook()
+    {
+        // TODO: Implement edit book dialog
+    }
+
+    private async Task DeleteBook()
+    {
+        if (book != null)
+        {
+            // Confirm deletion
+            DbContext.Books.Remove(book);
+            await DbContext.SaveChangesAsync();
+            Navigation.NavigateTo("/books");
+        }
+    }
+
+    private void ShowAddReviewDialog()
+    {
+        // TODO: Implement add review dialog
+    }
+
+    private async Task DeleteReview(int reviewId)
+    {
+        var review = await DbContext.Reviews.FindAsync(reviewId);
+        if (review != null)
+        {
+            DbContext.Reviews.Remove(review);
+            await DbContext.SaveChangesAsync();
+            await LoadBook();
+        }
+    }
+}
