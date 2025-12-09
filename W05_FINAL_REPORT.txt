@@ -1,0 +1,366 @@
+W05 PROJECT CHECKPOINT - BOOKSTACK
+Course: CSE 325 - .NET Development
+Team: Arthur Weale, Jaime Santiago Herrera, David Esparza
+Submitted by: David Esparza
+Date: November 29, 2024
+
+================================================================================
+PARTICIPANTS
+================================================================================
+
+Live Meeting: David Esparza (Individual work)
+Date: November 29, 2024
+
+Note: Andrea Brenzink de Oliveira Ferreira left the group. Arthur Weale and
+Jaime Santiago Herrera have not responded to communication attempts. All work
+completed individually.
+
+================================================================================
+SUMMARY OF WEEK 5 ACTIVITY
+================================================================================
+
+CHALLENGES:
+• Continued lack of team participation
+• Implementing Bootstrap modal in Blazor without JavaScript
+• Managing checkbox state for many-to-many relationships
+• Two-way parameter binding with EventCallbacks
+• Form validation and state management
+
+SUCCESSES:
+✅ Completed "Add Book Creation Dialog" feature (User Story #6)
+✅ Implemented complete modal form with validation
+✅ Multi-select checkboxes for authors and genres working
+✅ Real-time list refresh after adding books
+✅ Professional UI with Bootstrap styling
+✅ Build successful with 0 errors
+✅ All functionality tested and verified
+✅ Code committed and pushed to GitHub
+
+NEW TASKS COMPLETED:
+• Add Book Creation Dialog (modal form) - COMPLETED THIS WEEK
+
+NEW TASKS ADDED TO BACKLOG:
+• Edit book dialog
+• Delete book confirmation dialog
+• Book details page
+• Review management UI
+• Frontend search with filters
+• User authentication
+• Reading statistics dashboard
+• Book cover upload feature
+
+CHANGE ORDERS:
+• None this week - focused on completing Add Book Dialog feature
+
+================================================================================
+AZURE DEVOPS PROJECT URL
+================================================================================
+
+https://dev.azure.com/desparzasdavid/BookStack
+
+Board Status:
+• 6 User Stories completed (assigned to David Esparza)
+• 2 User Stories pending (unassigned)
+
+================================================================================
+DETAILED TASK REPORT: ADD BOOK CREATION DIALOG
+================================================================================
+
+WORK ITEM: User Story #6 - "Add Book Creation Dialog"
+STATUS: Done
+ASSIGNED TO: David Esparza
+AZURE DEVOPS WORK ITEM ID: #6
+
+---DESCRIPTION---
+
+Implemented a complete modal dialog component for adding new books to the
+BookStack library. The feature provides a professional, user-friendly form
+with comprehensive validation for all book properties, including multi-select
+for authors and genres.
+
+---TECHNICAL IMPLEMENTATION---
+
+1. BookCreateDto (Data Transfer Object)
+   File: BookStack.Web/Models/BookCreateDto.cs (29 lines)
+
+   • Separate DTO pattern for API input validation
+   • Properties: Title, Description, ISBN, Year, Pages, Cover URL
+   • Collections: AuthorIds[], GenreIds[] for many-to-many
+   • Validations:
+     - Required: Title, AuthorIds, GenreIds
+     - StringLength: Title (200), Description (2000), ISBN (20)
+     - Range: Year (1000-9999), Pages (1-10000)
+     - Regex: ISBN format (10 or 13 digits only)
+
+2. AddBookDialog Blazor Component
+   File: BookStack.Web/Components/Dialogs/AddBookDialog.razor (250+ lines)
+
+   Modal Features:
+   • Bootstrap modal with backdrop overlay (no JavaScript)
+   • EditForm with DataAnnotationsValidator
+   • InputText for text fields (Title, ISBN, Cover URL)
+   • InputTextArea for multi-line Description
+   • InputNumber for Year and Page count
+   • Checkbox lists for Authors and Genres (scrollable)
+   • Loading spinner during save
+   • Success/error message display
+   • Cancel and Submit buttons
+
+   Component Parameters:
+   • IsVisible (bool) - Controls dialog visibility
+   • IsVisibleChanged (EventCallback<bool>) - Two-way binding
+   • OnBookAdded (EventCallback) - Notifies parent on success
+
+   State Management:
+   • bookDto - Form data model
+   • availableAuthors/availableGenres - Loaded from DB
+   • isSaving - Prevents double submission
+   • errorMessage/successMessage - User feedback
+
+3. Database Operations
+
+   Create Book Process:
+   1. Create Book entity from DTO
+   2. SaveChangesAsync() to get Book.Id
+   3. Add BookAuthor relationships for each selected author
+   4. Add BookGenre relationships for each selected genre
+   5. SaveChangesAsync() to persist relationships
+
+   Features:
+   • Async/await throughout
+   • Transaction handling via EF Core
+   • Proper error handling with try/catch
+   • Form reset after successful save
+
+4. Integration with Books Page
+   File: BookStack.Web/Components/Pages/Books.razor (updated)
+
+   Changes:
+   • Added @using BookStack.Web.Components.Dialogs
+   • Added showAddDialog boolean state
+   • ShowAddBookDialog() method to open modal
+   • HandleBookAdded() callback to reload list
+   • Icon added to "Add New Book" button
+   • Books ordered by DateAdded descending
+
+5. Global Configuration
+   File: BookStack.Web/Components/_Imports.razor
+
+   • Added @using BookStack.Web.Components.Dialogs
+   • Makes dialog available globally without explicit using
+
+---CHALLENGES AND SOLUTIONS---
+
+Challenge 1: Bootstrap Modal Without JavaScript
+Problem: Blazor doesn't have built-in modal support
+Solution: Used CSS classes (fade show d-block) with inline styles for
+backdrop to create modal effect without JavaScript
+
+Challenge 2: Checkbox State Management
+Problem: Needed to track selected items in List<int>
+Solution: Created ToggleAuthor() and ToggleGenre() methods that add/remove
+IDs from lists based on checkbox state
+
+Challenge 3: Two-Way Parameter Binding
+Problem: Parent needs to control dialog visibility
+Solution: Used EventCallback pattern with IsVisible/IsVisibleChanged for
+proper Blazor component communication
+
+Challenge 4: Form Validation
+Problem: Multiple validation rules across different field types
+Solution: DataAnnotations on DTO with client-side validation via
+DataAnnotationsValidator in EditForm
+
+Challenge 5: Relationship Creation
+Problem: Can't add relationships until Book.Id exists
+Solution: Sequential saves - create book first, get ID, then add relationships
+
+---FIT WITHIN PROJECT SCOPE---
+
+This feature is critical to BookStack because:
+
+Core Functionality:
+• Enables primary CRUD operation (Create) for books
+• Without it, users can only view seeded data
+• Foundation for library management capabilities
+
+User Experience:
+• Modal pattern keeps user in context (no navigation)
+• Form validation prevents bad data entry
+• Immediate visual feedback with success/error messages
+
+Technical Demonstration:
+• Shows mastery of Blazor component architecture
+• Demonstrates form handling and validation
+• Proves understanding of many-to-many relationships
+• Exhibits proper async/await patterns
+
+Architecture:
+• DTO pattern separates API from database entities
+• Component-based UI enables reusability
+• Event-driven communication follows Blazor patterns
+
+---FUNCTIONALITY DELIVERED---
+
+User Features:
+✅ Click "Add New Book" button to open modal
+✅ Fill in book details (title, description, ISBN, year, pages, cover)
+✅ Select multiple authors via checkboxes
+✅ Select multiple genres via checkboxes
+✅ See validation errors immediately
+✅ Cancel to close without saving
+✅ Submit to save and see success message
+✅ Automatic list refresh shows new book at top
+✅ Form resets for adding another book
+
+Technical Features:
+✅ Client-side validation with DataAnnotations
+✅ Server-side validation in DTO
+✅ Loading spinner prevents double submission
+✅ Error handling displays user-friendly messages
+✅ Async database operations
+✅ Many-to-many relationship creation
+✅ Transaction handling via EF Core
+
+---CODE LOCATIONS---
+
+New Files:
+• BookStack.Web/Models/BookCreateDto.cs (29 lines)
+• BookStack.Web/Components/Dialogs/AddBookDialog.razor (250+ lines)
+
+Modified Files:
+• BookStack.Web/Components/Pages/Books.razor (141 lines, +39 changes)
+• BookStack.Web/Components/_Imports.razor (11 lines, +1 line)
+
+Total Impact:
+• 2 new files created
+• 2 existing files modified
+• ~320 lines of new code
+• 40 lines of changes
+
+---TESTING PERFORMED---
+
+Manual Testing Checklist:
+✅ Dialog opens when button clicked
+✅ Dialog closes when Cancel clicked
+✅ Required field validation works (Title, Author, Genre)
+✅ String length validation works (max characters enforced)
+✅ ISBN regex validation works (only 10 or 13 digits accepted)
+✅ Year range validation works (1000-9999 only)
+✅ Page count validation works (1-10000 only)
+✅ Can select multiple authors
+✅ Can deselect authors
+✅ Can select multiple genres
+✅ Can deselect genres
+✅ Submit button shows spinner during save
+✅ Book saves to database successfully
+✅ BookAuthor relationships created correctly
+✅ BookGenre relationships created correctly
+✅ Success message displays
+✅ Dialog closes after save
+✅ Books list refreshes automatically
+✅ New book appears at top of list
+✅ Form resets for next use
+✅ Error message displays if save fails
+
+Database Verification:
+✅ New book record created in Books table
+✅ BookAuthor records created for each selected author
+✅ BookGenre records created for each selected genre
+✅ Foreign keys maintain referential integrity
+✅ DateAdded set to current UTC time
+
+Build Verification:
+✅ Project builds with 0 errors
+✅ 1 warning about analyzer version (harmless)
+✅ No runtime errors
+✅ All components render correctly
+
+---USER EXPERIENCE IMPROVEMENTS---
+
+Visual Design:
+• Bootstrap modal provides professional appearance
+• Backdrop prevents accidental clicks outside dialog
+• Icon on "Add New Book" button improves visual clarity
+• Validation messages appear directly under fields
+• Helper text under ISBN shows expected format
+
+Usability:
+• Scrollable checkbox lists handle many authors/genres
+• Loading spinner prevents confusion during save
+• Success message confirms action before closing
+• Cancel button allows backing out without saving
+• Form stays populated until successful save
+
+Performance:
+• Modal opens instantly (no page load)
+• Async operations don't block UI
+• List refresh uses efficient Include() queries
+• Only relevant data loaded (authors, genres, books)
+
+---TIME INVESTED---
+
+Total: 2-3 hours
+
+Breakdown:
+• 30 min - DTO design and validation rules
+• 90 min - Dialog component development and styling
+• 30 min - Integration with Books page and testing
+• 30 min - Bug fixes and refinements
+
+---CONCLUSION---
+
+The Add Book Creation Dialog feature is now fully functional and provides a
+professional, user-friendly way to add books to the BookStack library. The
+implementation demonstrates proper Blazor component architecture, form
+validation, and database relationship management.
+
+This feature completes one of the core CRUD operations and significantly
+improves the application's usability by allowing users to build their own
+book collections beyond the seed data.
+
+================================================================================
+PROJECT STATUS
+================================================================================
+
+Current State: MVP+ (Core + Add Book Feature)
+Build: ✅ Successful (0 errors)
+Database: ✅ Working with seed data
+API: ✅ 13 endpoints functional
+UI: ✅ Responsive and interactive
+New Feature: ✅ Add Book Dialog complete
+
+Completed Features:
+• Database layer with many-to-many relationships
+• REST API with 13 endpoints
+• Blazor UI (Home, Books, Shelves pages)
+• Add Book Dialog with validation (Week 5)
+
+Next Features:
+• Book details page
+• Edit book dialog
+• Delete confirmation
+• User authentication
+• Review management
+
+GitHub: https://github.com/desparzas/BookStack
+Commits: Latest commit d352d2a (W05: Add Book Dialog)
+
+================================================================================
+TEAM NOTES
+================================================================================
+
+All work completed independently due to lack of team participation. Project
+remains well-structured and documented for potential future collaboration.
+
+Code quality maintained with:
+• Clear separation of concerns
+• Comprehensive comments
+• Consistent naming conventions
+• Proper async/await patterns
+• SOLID principles
+
+---
+End of Report
+David Esparza - CSE 325
+November 29, 2024
