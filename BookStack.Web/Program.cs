@@ -16,9 +16,14 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 
 // Add DbContext with SQLite
+// Use /app/data directory for database in Docker, or current directory in development
+var dbPath = builder.Environment.IsProduction()
+    ? "/app/data/bookstack.db"
+    : "bookstack.db";
+
 builder.Services.AddDbContext<BookStackContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("BookStackContext")
-        ?? "Data Source=bookstack.db"));
+        ?? $"Data Source={dbPath}"));
 
 // Add authentication services
 builder.Services.AddScoped<AuthService>();

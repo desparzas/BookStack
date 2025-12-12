@@ -3,6 +3,7 @@
 @using BookStack.Web.Models
 @using Microsoft.EntityFrameworkCore
 @inject BookStackContext DbContext
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 <PageTitle>Shelves - BookStack</PageTitle>
@@ -79,6 +80,9 @@
                             <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewShelf(shelf.Id)">
                                 View All Books
                             </button>
+                            <button class="btn btn-sm btn-outline-success ms-2" @onclick="() => ShowAddBookDialog(shelf.Id)">
+                                Add Book
+                            </button>
                             @if (!shelf.IsDefault)
                             {
                                 <button class="btn btn-sm btn-outline-danger ms-2" @onclick="() => DeleteShelf(shelf.Id)">
@@ -93,12 +97,165 @@
     }
 </div>
 
+<!-- Add New Shelf Modal -->
+@if (showAddShelfModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Create New Shelf</h5>
+                    <button type="button" class="btn-close" @onclick="HideAddShelfDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" class="form-control" @bind="newShelfName" placeholder="e.g., To Read" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" @bind="newShelfDescription" rows="3" placeholder="Optional description"></textarea>
+                    </div>
+                    @if (!string.IsNullOrEmpty(shelfErrorMessage))
+                    {
+                        <div class="alert alert-danger">@shelfErrorMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideAddShelfDialog">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="CreateShelf">Create Shelf</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- View Shelf Details Modal -->
+@if (showViewShelfModal && selectedShelf != null)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@selectedShelf.Name</h5>
+                    <button type="button" class="btn-close" @onclick="HideViewShelfDialog"></button>
+                </div>
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(selectedShelf.Description))
+                    {
+                        <p class="text-muted">@selectedShelf.Description</p>
+                    }
+
+                    @if (selectedShelf.ShelfBooks.Any())
+                    {
+                        <ul class="list-group">
+                            @foreach (var shelfBook in selectedShelf.ShelfBooks)
+                            {
+                                <li class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1">@shelfBook.Book.Title</h6>
+                                            @if (shelfBook.Book.BookAuthors.Any())
+                                            {
+                                                <small class="text-muted">by @string.Join(", ", shelfBook.Book.BookAuthors.Select(ba => ba.Author.Name))</small>
+                                            }
+                                            <br />
+                                            <span class="badge @GetStatusBadgeClass(shelfBook.ReadingStatus) mt-1">
+                                                @shelfBook.ReadingStatus.ToString()
+                                            </span>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveBookFromShelf(selectedShelf.Id, shelfBook.BookId)">
+                                            Remove
+                                        </button>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">This shelf is empty.</p>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideViewShelfDialog">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<!-- Add Book to Shelf Modal -->
+@if (showAddBookModal)
+{
+    <div class="modal show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Book to Shelf</h5>
+                    <button type="button" class="btn-close" @onclick="HideAddBookDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Select Book *</label>
+                        <select class="form-select" @bind="selectedBookId">
+                            <option value="0">-- Select a book --</option>
+                            @if (availableBooks != null)
+                            {
+                                @foreach (var book in availableBooks)
+                                {
+                                    <option value="@book.Id">@book.Title</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reading Status *</label>
+                        <select class="form-select" @bind="selectedReadingStatus">
+                            <option value="@ReadingStatus.NotStarted">Not Started</option>
+                            <option value="@ReadingStatus.InProgress">In Progress</option>
+                            <option value="@ReadingStatus.Completed">Completed</option>
+                        </select>
+                    </div>
+                    @if (!string.IsNullOrEmpty(addBookErrorMessage))
+                    {
+                        <div class="alert alert-danger">@addBookErrorMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="HideAddBookDialog">Cancel</button>
+                    <button type="button" class="btn btn-primary" @onclick="AddBookToShelf">Add to Shelf</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     private List<Shelf>? shelves;
+    private List<Book>? availableBooks;
+
+    // Add Shelf Modal
+    private bool showAddShelfModal = false;
+    private string newShelfName = string.Empty;
+    private string newShelfDescription = string.Empty;
+    private string shelfErrorMessage = string.Empty;
+
+    // View Shelf Modal
+    private bool showViewShelfModal = false;
+    private Shelf? selectedShelf;
+
+    // Add Book to Shelf Modal
+    private bool showAddBookModal = false;
+    private int selectedShelfId;
+    private int selectedBookId = 0;
+    private ReadingStatus selectedReadingStatus = ReadingStatus.NotStarted;
+    private string addBookErrorMessage = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         await LoadShelves();
+        await LoadAvailableBooks();
     }
 
     private async Task LoadShelves()
@@ -113,6 +270,15 @@
             .ToListAsync();
     }
 
+    private async Task LoadAvailableBooks()
+    {
+        availableBooks = await DbContext.Books
+            .Include(b => b.BookAuthors)
+                .ThenInclude(ba => ba.Author)
+            .OrderBy(b => b.Title)
+            .ToListAsync();
+    }
+
     private string GetStatusBadgeClass(ReadingStatus status)
     {
         return status switch
@@ -124,14 +290,134 @@
         };
     }
 
+    // Add Shelf Dialog Methods
     private void ShowAddShelfDialog()
     {
-        // TODO: Implement add shelf dialog
+        newShelfName = string.Empty;
+        newShelfDescription = string.Empty;
+        shelfErrorMessage = string.Empty;
+        showAddShelfModal = true;
     }
 
-    private void ViewShelf(int shelfId)
+    private void HideAddShelfDialog()
     {
-        // TODO: Navigate to shelf details page
+        showAddShelfModal = false;
+    }
+
+    private async Task CreateShelf()
+    {
+        shelfErrorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(newShelfName))
+        {
+            shelfErrorMessage = "Shelf name is required.";
+            return;
+        }
+
+        var shelf = new Shelf
+        {
+            Name = newShelfName.Trim(),
+            Description = newShelfDescription?.Trim(),
+            IsDefault = false,
+            DateCreated = DateTime.UtcNow
+        };
+
+        DbContext.Shelves.Add(shelf);
+        await DbContext.SaveChangesAsync();
+        await LoadShelves();
+
+        HideAddShelfDialog();
+    }
+
+    // View Shelf Methods
+    private async Task ViewShelf(int shelfId)
+    {
+        selectedShelf = await DbContext.Shelves
+            .Include(s => s.ShelfBooks)
+                .ThenInclude(sb => sb.Book)
+                    .ThenInclude(b => b.BookAuthors)
+                        .ThenInclude(ba => ba.Author)
+            .FirstOrDefaultAsync(s => s.Id == shelfId);
+
+        if (selectedShelf != null)
+        {
+            showViewShelfModal = true;
+        }
+    }
+
+    private void HideViewShelfDialog()
+    {
+        showViewShelfModal = false;
+        selectedShelf = null;
+    }
+
+    // Add Book to Shelf Methods
+    private void ShowAddBookDialog(int shelfId)
+    {
+        selectedShelfId = shelfId;
+        selectedBookId = 0;
+        selectedReadingStatus = ReadingStatus.NotStarted;
+        addBookErrorMessage = string.Empty;
+        showAddBookModal = true;
+    }
+
+    private void HideAddBookDialog()
+    {
+        showAddBookModal = false;
+    }
+
+    private async Task AddBookToShelf()
+    {
+        addBookErrorMessage = string.Empty;
+
+        if (selectedBookId == 0)
+        {
+            addBookErrorMessage = "Please select a book.";
+            return;
+        }
+
+        // Check if book is already on shelf
+        var exists = await DbContext.ShelfBooks
+            .AnyAsync(sb => sb.ShelfId == selectedShelfId && sb.BookId == selectedBookId);
+
+        if (exists)
+        {
+            addBookErrorMessage = "This book is already on this shelf.";
+            return;
+        }
+
+        var shelfBook = new ShelfBook
+        {
+            ShelfId = selectedShelfId,
+            BookId = selectedBookId,
+            ReadingStatus = selectedReadingStatus,
+            DateAdded = DateTime.UtcNow
+        };
+
+        DbContext.ShelfBooks.Add(shelfBook);
+        await DbContext.SaveChangesAsync();
+        await LoadShelves();
+
+        HideAddBookDialog();
+    }
+
+    private async Task RemoveBookFromShelf(int shelfId, int bookId)
+    {
+        var shelfBook = await DbContext.ShelfBooks
+            .FirstOrDefaultAsync(sb => sb.ShelfId == shelfId && sb.BookId == bookId);
+
+        if (shelfBook != null)
+        {
+            DbContext.ShelfBooks.Remove(shelfBook);
+            await DbContext.SaveChangesAsync();
+            await LoadShelves();
+
+            // Refresh selected shelf if viewing details
+            if (selectedShelf != null && selectedShelf.Id == shelfId)
+            {
+                await ViewShelf(shelfId);
+            }
+        }
     }
 
     private async Task DeleteShelf(int shelfId)
